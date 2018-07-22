@@ -6,11 +6,15 @@ int main()
 	Trie *trie = new Trie();
 
 	trie->insert("hello", 1);
+	//trie->insert("I", 12);
 	trie->insert("friend", 3);
 	trie->insert("stick", 5);
 	trie->insert("mystery", 4);
+	trie->insert("m", 41);
 	trie->insert("window", 8);
+	trie->insert("w", 10);
 	trie->insert("spider", 12);
+	trie->insert("spy", 16);
 
 	if (false)
 	{
@@ -23,18 +27,16 @@ int main()
 			std::cout << value;
 		}
 
-		if (false) {
-			std::cout << std::endl;
+		/*std::cout << std::endl;
 
-			bool isRemoved = trie->remove("stick");
+		bool isRemoved = trie->remove("stick");
 
-			if (isRemoved) {
-				std::cout << "\"stick\" is removed";
-			}
-			else {
-				std::cout << "Fail with removing";
-			}
+		if (isRemoved) {
+		std::cout << "\"stick\" is removed";
 		}
+		else {
+		std::cout << "Fail with removing";
+		}*/
 
 		std::cout << std::endl;
 

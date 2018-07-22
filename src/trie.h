@@ -1,6 +1,8 @@
 #ifndef TRIE_H
 #define TRIE_H
 
+#define _CRT_SECURE_NO_WARNINGS
+
 #define ENG_ALPHABET_SIZE 26
 #include <limits.h>
 #include <string.h>
@@ -15,7 +17,7 @@ struct Node {
 	unsigned value;
 
 	bool isKey;
-	
+
 	Node* links[ENG_ALPHABET_SIZE];
 
 	bool isLeaf() const;
@@ -26,7 +28,7 @@ struct Node {
 };
 
 
-bool Node::isLeaf() const 
+bool Node::isLeaf() const
 {
 	for (unsigned i = 0; i < ENG_ALPHABET_SIZE; ++i) {
 		if (this->links[i]) {
@@ -58,30 +60,32 @@ class Trie
 {
 	Node *root;
 
-	bool removeImpl(const char* key, Node* currentNode, size_t keyLength, unsigned level);
+	KeyValue *keyValueHead;
 
-	KeyValue* addKeyValue(KeyValue* head, KeyValue* keyValue);
+	bool removeImpl(const char*, Node *, size_t, unsigned);
 
-	KeyValue* getGreaterOfImpl(Node* currentNode, KeyValue* keyValueHead, char* key, unsigned number, unsigned level);
+	//KeyValue* addKeyValue(KeyValue*, KeyValue*);
 
-	public:
-	
-		Trie() 
-			: root(new Node())
-		{}
+	void getGreaterOfImpl(Node *, char*, unsigned, unsigned);
 
-		void insert(const char* key, unsigned value);
+public:
 
-		int get(const char* key) const;
+	Trie()
+		: root(new Node()), keyValueHead(nullptr)
+	{}
 
-		bool remove(const char* key);
+	void insert(const char*, unsigned);
 
-		// Returns pointer to the head of KeyValue linked list
-		KeyValue* getGreatersOf(unsigned number);
+	int get(const char*) const;
 
-		void flush();
-		
-		~Trie() {}
+	bool remove(const char*);
+
+	// Returns pointer to the head of KeyValue linked list
+	KeyValue* getGreatersOf(unsigned);
+
+	void flush();
+
+	~Trie();
 };
 
 
@@ -126,7 +130,7 @@ int Trie::get(const char* key) const
 	return -1;
 }
 
-bool Trie::removeImpl(const char* key, Node* currentNode, size_t keyLength, unsigned level)
+bool Trie::removeImpl(const char* key, Node *currentNode, size_t keyLength, unsigned level)
 {
 	if (currentNode) {
 		if (level == keyLength) {
@@ -160,7 +164,7 @@ bool Trie::removeImpl(const char* key, Node* currentNode, size_t keyLength, unsi
 			}
 		}
 	}
-	 
+
 	return false;
 }
 
@@ -173,19 +177,32 @@ bool Trie::remove(const char* key)
 	return removeImpl(key, root, strlen(key), 0);
 }
 
-KeyValue* Trie::getGreaterOfImpl(Node* currentNode, KeyValue* keyValueHead, char* key, unsigned number, unsigned level)
+void Trie::getGreaterOfImpl(Node *currentNode, char* prefix, unsigned number, unsigned level)
 {
-	KeyValue* keyValue = nullptr;
-
 	if (currentNode->isKey) {
-		if (level == strlen(key) ||
+		if (level == strlen(prefix) ||
 			currentNode->isLeaf())
 		{
-			key[level] = '\0';
+			prefix[level] = '\0';
 
 			if (currentNode->value > number) {
-				keyValue = new KeyValue(key, currentNode->value);
+				KeyValue *keyValue = new KeyValue(strcpy(new char[strlen(prefix)], prefix), currentNode->value);
+
+				if (!keyValueHead) {
+					keyValueHead = keyValue;
+				}
+				else {
+					KeyValue* newKeyValueHead = keyValueHead;
+
+					while (newKeyValueHead->next) {
+						newKeyValueHead = newKeyValueHead->next;
+					}
+
+					newKeyValueHead->next = keyValue;
+				}
 			}
+
+			return;
 		}
 	}
 
@@ -193,44 +210,25 @@ KeyValue* Trie::getGreaterOfImpl(Node* currentNode, KeyValue* keyValueHead, char
 		Node* currentLink = currentNode->links[i];
 
 		if (currentLink) {
-			key[level] = i + 'a';
-
-			KeyValue* resultKeyValue = getGreaterOfImpl(currentLink, keyValueHead, key, number, level + 1);
-
-			return resultKeyValue;
+			prefix[level] = i + 'a';
+			getGreaterOfImpl(currentLink, prefix, number, level + 1);
 		}
 	}
-
-	return keyValue;
 }
 
 KeyValue* Trie::getGreatersOf(unsigned number)
 {
-	KeyValue* keyValueHead = nullptr;
+	if (keyValueHead) {
+		delete keyValueHead;
+		keyValueHead = nullptr;
+	}
 
 	if (root) {
 		for (unsigned i = 0; i < ENG_ALPHABET_SIZE; ++i) {
 			Node* currentLink = root->links[i];
 
 			if (currentLink) {
-				KeyValue* keyValue = getGreaterOfImpl(currentLink, keyValueHead, new char(i + 'a'), number, 1);
-
-				if (keyValue) {
-					if (!keyValueHead) {
-						keyValueHead = keyValue;
-					}
-					else {
-						KeyValue* newKeyValueHead = keyValueHead;
-
-						while (newKeyValueHead &&
-							   newKeyValueHead->next)
-						{
-							newKeyValueHead = newKeyValueHead->next;
-						}
-
-						newKeyValueHead->next = keyValue;
-					}
-				}
+				getGreaterOfImpl(currentLink, new char(i + 'a'), number, 1);
 			}
 		}
 	}
@@ -240,6 +238,14 @@ KeyValue* Trie::getGreatersOf(unsigned number)
 
 void Trie::flush()
 {
+}
+
+Trie::~Trie()
+{
+	if (keyValueHead) {
+		delete keyValueHead;
+		keyValueHead = nullptr;
+	}
 }
 
 #endif // TRIE_H
