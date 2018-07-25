@@ -1,92 +1,123 @@
-#include "trie.h"
+﻿#include "trie.h"
 #include <iostream>
+
+
+void printValue(Trie* &trie, const char* someKey) 
+{
+	int value = trie->getBy(someKey);
+
+	if (value == -1) {
+		std::cout << "There is no key " << "\"" << someKey << "\"";
+	}
+	else {
+		std::cout << "The value of " << someKey << " is " << value;
+	}
+
+	std::cout << std::endl << std::endl;
+}
+
+void printList(KeyValue* &listHead, unsigned someNumber)
+{
+	if (!listHead) {
+		std::cout << "List is empty" << std::endl;
+	}
+	else {
+		std::cout << "Values greater than " << someNumber << ':' << std::endl;
+
+		std::cout << listHead->key << ' ' << listHead->value << std::endl;
+
+		while (listHead->next) {
+			listHead = listHead->next;
+			std::cout << listHead->key << ' ' << listHead->value << std::endl;
+		}
+	}
+}
+
+void printKeyIsRemoved(Trie* &trie, const char* key)
+{
+	if (trie->remove(key)) {
+		std::cout << "\"" << key << "\" is removed";
+	}
+	else {
+		std::cout << "Fail with removing the key \"" << key << "\"";
+	}
+
+	std::cout << std::endl << std::endl;
+}
+
 
 int main()
 {
 	Trie *trie = new Trie();
 
+	system("chcp 1251");
+
+	std::cout << "Trie initialization" << std::endl << std::endl;
+	
+	printValue(trie, "hello");
+	
+	printValue(trie, "music");
+
+	KeyValue *keyValueHead = trie->getValuesGreaterThan(3);
+
+	printList(keyValueHead, 3);
+
+	std::cout << std::endl << "//////////////////////////////////////////////" << std::endl;
+	std::cout << std::endl << "Inserting the keys" << std::endl;
+
 	trie->insert("hello", 1);
 	trie->insert("I", 12);
 	trie->insert("friend", 3);
-	trie->insert("������", 5);
+	trie->insert("свинья", 5);
 	trie->insert("mystery", 4);
-	trie->insert("������", 8);
+	trie->insert("music", 9);
+	trie->insert("яблоко", 8);
 	trie->insert("m", 41);
+	trie->insert("S", 35);
 	trie->insert("window", 8);
 	trie->insert("w", 10);
 	trie->insert("324kkff", 50);
 	trie->insert("fg3@k-ff", 56);
 	trie->insert("    ", 30);
 	trie->insert("spider", 12);
+	trie->insert("stick", 16);
 	trie->insert("", 46);
 	trie->insert("spy", 16);
 
-	if (false)
-	{
-		int value = trie->getBy("hello");
+	std::cout << "Inserting is done" << std::endl << std::endl;
 
-		if (value == -1) {
-			std::cout << "There is no key \"hello\"";
-		}
-		else {
-			std::cout << value;
-		}
+	printValue(trie, "music");
 
-		std::cout << std::endl;
+	printValue(trie, "свинья");
 
-		bool isRemoved = trie->remove("stick");
+	printKeyIsRemoved(trie, "stick");
 
-		if (isRemoved) {
-			std::cout << "\"stick\" is removed";
-		}
-		else {
-			std::cout << "Fail with removing";
-		}
+	printKeyIsRemoved(trie, "music");
 
-		std::cout << std::endl;
+	printValue(trie, "music");
 
-		int stickValue = trie->getBy("stick");
+	printKeyIsRemoved(trie, "яблоко");
 
-		if (stickValue == -1) {
-			std::cout << "There is no key \"stick\"";
-		}
-		else {
-			std::cout << stickValue;
-		}
+	printValue(trie, "яблоко");
 
-		std::cout << std::endl;
+	std::cout << "///////////////////////////////////////////////////" << std::endl << std::endl;
 
-		const char* strings[5] = { "hello", "friend", "mystery", "window", "spider" };
+	const char* keys[5] = { "hello", "friend", "mystery", "window", "spider" };
 
-		unsigned need = 3;
+	for (auto key : keys) {
 
-		for (auto key : strings) {
+		unsigned value = trie->getBy(key);
 
-			unsigned value = trie->getBy(key);
-
-			if (value > need) {
-				std::cout << value << " of \"" << key << "\" greater than " << need << std::endl;
-			}
+		if (value > 3) {
+			std::cout << value << " of \"" << key << "\" greater than " << 3 << std::endl;
 		}
 	}
 
-	unsigned need = 3;
+	std::cout << std::endl;
 
-	KeyValue *keyValueHead = trie->getGreatersOf(need);
+	keyValueHead = trie->getValuesGreaterThan(5);
 
-	if (!keyValueHead) {
-		std::cout << "List is empty" << std::endl;
-	}
-	else {
-		std::cout << "greater than " << need << std::endl;
-
-		std::cout << keyValueHead->key << ' ' << keyValueHead->value << std::endl;
-
-		while (keyValueHead->next) {
-			keyValueHead = keyValueHead->next;
-			std::cout << keyValueHead->key << ' ' << keyValueHead->value << std::endl;
-		}
-	}
+	printList(keyValueHead, 5);
 
 	std::cin.get();
 

@@ -13,33 +13,6 @@ inline unsigned index(char keyChar)
 	return keyChar - 'a';
 }
 
-struct Node {
-
-	unsigned value;
-
-	bool isKey;
-
-	Node* links[ENG_ALPHABET_SIZE];
-
-	bool isLeaf() const;
-
-	Node()
-		: value(UINT_MAX), isKey(false), links()
-	{}
-};
-
-
-bool Node::isLeaf() const
-{
-	for (unsigned i = 0; i < ENG_ALPHABET_SIZE; ++i) {
-		if (this->links[i]) {
-			return false;
-		}
-	}
-
-	return true;
-}
-
 
 struct KeyValue {
 	const char* key;
@@ -59,18 +32,35 @@ struct KeyValue {
 
 class Trie
 {
+	struct Node {
+
+		unsigned value;
+
+		bool isKey;
+
+		Node* links[ENG_ALPHABET_SIZE];
+
+		bool isLeaf() const;
+
+		Node()
+			: value(UINT_MAX), isKey(false), links()
+		{}
+	};
+
 	Node *root;
 
 	KeyValue *keyValueHead;
 
 	bool isCorrectKey(const char*) const;
 
-	bool removeImpl(const char*, Node *, size_t, unsigned);
+	bool innerRemove(const char*, Node* &, unsigned);
 
-	void getGreaterOfImpl(Node *, char*, unsigned, unsigned);
+	void innerGetValuesGreaterThan(Node* &, char*, unsigned, unsigned);
+
+	void clearKeyValueList();
 
 	// Removing the trie from memory
-	void flushImpl(Node *);
+	void flush(Node* &);
 
 	public:
 	
@@ -84,12 +74,23 @@ class Trie
 	
 		bool remove(const char*);
 	
-		// Returns pointer to the head of KeyValue linked list
-		KeyValue* getGreatersOf(unsigned);
+		// Returns a pointer to the KeyValue head of the linked list
+		KeyValue* getValuesGreaterThan(unsigned);
 	
 		~Trie();
 };
 
+
+bool Trie::Node::isLeaf() const
+{
+	for (unsigned i = 0; i < ENG_ALPHABET_SIZE; ++i) {
+		if (this->links[i]) {
+			return false;
+		}
+	}
+
+	return true;
+}
 
 bool Trie::isCorrectKey(const char* key) const
 {
@@ -97,7 +98,9 @@ bool Trie::isCorrectKey(const char* key) const
 
 	if (keyLength > 0) {
 		for (size_t i = 0; i < keyLength; i++) {
-			if (!isalpha(key[i])) {
+			if (!(key[i] >= 'a' && key[i] <= 'z' ||
+				  key[i] >= 'A' && key[i] <= 'Z'))
+			{
 				return false;
 			}
 		}
@@ -132,7 +135,7 @@ void Trie::insert(const char* key, unsigned value)
 
 int Trie::getBy(const char* key) const
 {
-	if (root || strlen(key) > 0 || isCorrectKey(key)) {
+	if (root && strlen(key) > 0 && isCorrectKey(key)) {
 		Node *currentNode = root;
 
 		for (size_t i = 0; i < strlen(key); ++i) {
@@ -152,42 +155,36 @@ int Trie::getBy(const char* key) const
 	return -1;
 }
 
-bool Trie::removeImpl(const char* key, Node *currentNode, size_t keyLength, unsigned level)
+bool Trie::innerRemove(const char* key, Node* &currentNode, unsigned level)
 {
-	if (currentNode) {
-		if (level == keyLength) {
-			if (currentNode->isKey) {
-				currentNode->isKey = false;
-				currentNode->value = UINT_MAX;
-
-				if (currentNode->isLeaf()) {
-					delete currentNode;
-					currentNode = nullptr;
-				}
-
-				return true;
-			}
+	if (level == strlen(key)) {
+		if (!currentNode->isKey) {
+			return false;
 		}
-		else {
-			Node* linkNode = currentNode->links[index(key[level])];
 
-			if (removeImpl(key, linkNode, keyLength, level + 1)) {
+		currentNode->isKey = false;
+		currentNode->value = UINT_MAX;
 
-				if (linkNode->isLeaf()) {
-					delete linkNode;
-					linkNode = nullptr;
-				}
-				else {
-					linkNode->isKey = false;
-					linkNode->value = UINT_MAX;
-				}
-
-				return true;
-			}
-		}
+		return currentNode->isLeaf();
 	}
 
-	return false;
+	Node *linkNode = currentNode->links[index(key[level])];
+
+	if (!linkNode) {
+		return false;
+	}
+
+	bool shouldDeleteCurrentNode = innerRemove(key, linkNode, level + 1);
+
+	if (shouldDeleteCurrentNode) {
+		delete linkNode;
+		linkNode = nullptr;
+		currentNode->links[index(key[level])] = linkNode;
+
+		return currentNode->isLeaf();
+	}
+
+	return true;
 }
 
 bool Trie::remove(const char* key)
@@ -196,10 +193,10 @@ bool Trie::remove(const char* key)
 		return false;
 	}
 
-	return removeImpl(key, root, strlen(key), 0);
+	return innerRemove(key, root, 0);
 }
 
-void Trie::getGreaterOfImpl(Node *currentNode, char* prefix, unsigned number, unsigned level)
+void Trie::innerGetValuesGreaterThan(Node* &currentNode, char* prefix, unsigned number, unsigned level)
 {
 	if (currentNode->isKey) {
 		prefix[level] = '\0';
@@ -228,39 +225,55 @@ void Trie::getGreaterOfImpl(Node *currentNode, char* prefix, unsigned number, un
 
 			if (currentLink) {
 				prefix[level] = i + 'a';
-				getGreaterOfImpl(currentLink, prefix, number, level + 1);
+				innerGetValuesGreaterThan(currentLink, prefix, number, level + 1);
 			}
 		}
 	}
 }
 
-KeyValue* Trie::getGreatersOf(unsigned number)
+void Trie::clearKeyValueList()
 {
 	if (keyValueHead) {
-		delete keyValueHead;
+		KeyValue *currentHead = keyValueHead;
+		KeyValue *next = nullptr;
+
+		while (currentHead) {
+			next = currentHead->next;
+			delete currentHead;
+			currentHead = next;
+		}
+
 		keyValueHead = nullptr;
 	}
+}
+
+KeyValue* Trie::getValuesGreaterThan(unsigned number)
+{
+	// Clear the list before using
+	clearKeyValueList();
 
 	if (root) {
-		getGreaterOfImpl(root, new char(), number, 0);
+		innerGetValuesGreaterThan(root, new char(), number, 0);
 	}
 
 	return keyValueHead;
 }
 
-void Trie::flushImpl(Node *currentNode)
+void Trie::flush(Node* &currentNode)
 {
-	if (currentNode) {
-		delete currentNode;
-		currentNode = nullptr;
-	}
+	if (root) {
+		if (!currentNode) {
+			return;
+		}
 
-	if (!currentNode->isLeaf()) {
 		for (unsigned i = 0; i < ENG_ALPHABET_SIZE; ++i) {
 			Node* currentLink = currentNode->links[i];
 
 			if (currentLink) {
-				flushImpl(currentLink);
+				flush(currentLink);
+				delete currentLink;
+				currentLink = nullptr;
+				currentNode->links[i] = currentLink;
 			}
 		}
 	}
@@ -268,13 +281,13 @@ void Trie::flushImpl(Node *currentNode)
 
 Trie::~Trie()
 {
-	if (keyValueHead) {
-		delete keyValueHead;
-		keyValueHead = nullptr;
-	}
+	clearKeyValueList();
+
+	flush(root);
 
 	if (root) {
-		flushImpl(root);
+		delete root;
+		root = nullptr;
 	}
 }
 
