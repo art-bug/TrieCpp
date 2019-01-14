@@ -1,7 +1,6 @@
 ﻿#include "trie.h"
 #include <iostream>
 
-
 void printValue(Trie* &trie, const char* someKey) 
 {
 	int value = trie->getBy(someKey);
@@ -44,7 +43,6 @@ void printKeyIsRemoved(Trie* &trie, const char* key)
 
 	std::cout << std::endl << std::endl;
 }
-
 
 int main()
 {

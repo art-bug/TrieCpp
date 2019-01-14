@@ -13,7 +13,6 @@ inline unsigned index(char keyChar)
 	return keyChar - 'a';
 }
 
-
 struct KeyValue {
 	const char* key;
 	unsigned value;
@@ -28,7 +27,6 @@ struct KeyValue {
 		: key(key), value(value), next(nullptr)
 	{}
 };
-
 
 class Trie
 {
@@ -79,7 +77,6 @@ class Trie
 	
 		~Trie();
 };
-
 
 bool Trie::Node::isLeaf() const
 {
@@ -204,18 +201,8 @@ void Trie::innerGetValuesGreaterThan(Node* &currentNode, char* prefix, unsigned 
 		if (currentNode->value > number) {
 			KeyValue *keyValue = new KeyValue(strcpy(new char[strlen(prefix)], prefix), currentNode->value);
 
-			if (!keyValueHead) {
-				keyValueHead = keyValue;
-			}
-			else {
-				KeyValue* newKeyValueHead = keyValueHead;
-
-				while (newKeyValueHead->next) {
-					newKeyValueHead = newKeyValueHead->next;
-				}
-
-				newKeyValueHead->next = keyValue;
-			}
+			keyValue->next = keyValueHead;
+			keyValueHead = keyValue;
 		}
 	}
 
